@@ -3,6 +3,29 @@ from datetime import date
 
 DB_FILE = 'football.db'
 
+VALID_POSITIONS = ('前锋', '后卫', '中场', '守门员')
+VALID_STATUSES = ('可上场', '伤停', '停赛')
+VALID_SEVERITIES = ('轻微', '中度', '严重')
+
+
+class ValidationError(Exception):
+    pass
+
+
+def validate_position(position):
+    if position not in VALID_POSITIONS:
+        raise ValidationError(f'位置必须是以下之一: {", ".join(VALID_POSITIONS)}')
+
+
+def validate_status(status):
+    if status not in VALID_STATUSES:
+        raise ValidationError(f'状态必须是以下之一: {", ".join(VALID_STATUSES)}')
+
+
+def validate_severity(severity):
+    if severity not in VALID_SEVERITIES:
+        raise ValidationError(f'严重程度必须是以下之一: {", ".join(VALID_SEVERITIES)}')
+
 
 def get_conn():
     conn = sqlite3.connect(DB_FILE)
@@ -51,6 +74,8 @@ def get_all_players():
 
 
 def add_player(nickname, phone, position, status='可上场'):
+    validate_position(position)
+    validate_status(status)
     conn = get_conn()
     cursor = conn.cursor()
     cursor.execute(
@@ -64,6 +89,8 @@ def add_player(nickname, phone, position, status='可上场'):
 
 
 def update_player(player_id, nickname, phone, position, status):
+    validate_position(position)
+    validate_status(status)
     conn = get_conn()
     cursor = conn.cursor()
     cursor.execute(
@@ -97,10 +124,16 @@ def get_player(player_id):
 
 
 def add_injury(player_id, injury_date, description, severity, expected_recovery_date):
+    validate_severity(severity)
     conn = get_conn()
     cursor = conn.cursor()
     try:
-        conn.execute('BEGIN')
+        conn.execute('BEGIN IMMEDIATE')
+        cursor.execute('SELECT id, status FROM players WHERE id=?', (player_id,))
+        player = cursor.fetchone()
+        if not player:
+            conn.rollback()
+            raise ValidationError('队员不存在')
         cursor.execute(
             'INSERT INTO injuries (player_id, injury_date, description, severity, expected_recovery_date) VALUES (?, ?, ?, ?, ?)',
             (player_id, injury_date, description, severity, expected_recovery_date)
@@ -112,8 +145,13 @@ def add_injury(player_id, injury_date, description, severity, expected_recovery_
         conn.commit()
         injury_id = cursor.lastrowid
         return injury_id
+    except ValidationError:
+        if conn.in_transaction:
+            conn.rollback()
+        raise
     except Exception as e:
-        conn.rollback()
+        if conn.in_transaction:
+            conn.rollback()
         raise e
     finally:
         conn.close()
@@ -123,26 +161,43 @@ def confirm_recovery(injury_id):
     conn = get_conn()
     cursor = conn.cursor()
     try:
-        conn.execute('BEGIN')
-        cursor.execute('SELECT player_id FROM injuries WHERE id=?', (injury_id,))
-        row = cursor.fetchone()
-        if not row:
+        conn.execute('BEGIN IMMEDIATE')
+        cursor.execute(
+            'SELECT player_id, recovered FROM injuries WHERE id=?',
+            (injury_id,)
+        )
+        injury_row = cursor.fetchone()
+        if not injury_row:
             conn.rollback()
-            return False
-
-        player_id = row['player_id']
-        cursor.execute('SELECT status FROM players WHERE id=?', (player_id,))
+            return False, '伤病记录不存在'
+        if injury_row['recovered']:
+            conn.rollback()
+            return False, '该伤病记录已确认康复，请勿重复操作'
+        player_id = injury_row['player_id']
+        cursor.execute(
+            'SELECT status FROM players WHERE id=?',
+            (player_id,)
+        )
         player_row = cursor.fetchone()
-        if not player_row or player_row['status'] != '伤停':
+        if not player_row:
             conn.rollback()
-            return False
-
-        cursor.execute('UPDATE injuries SET recovered=1 WHERE id=?', (injury_id,))
-        cursor.execute("UPDATE players SET status='可上场' WHERE id=?", (player_id,))
+            return False, '队员不存在'
+        if player_row['status'] != '伤停':
+            conn.rollback()
+            return False, f'队员当前状态为"{player_row["status"]}"，只有伤停状态才能确认康复'
+        cursor.execute(
+            'UPDATE injuries SET recovered=1 WHERE id=?',
+            (injury_id,)
+        )
+        cursor.execute(
+            "UPDATE players SET status='可上场' WHERE id=?",
+            (player_id,)
+        )
         conn.commit()
-        return True
+        return True, '康复确认成功'
     except Exception as e:
-        conn.rollback()
+        if conn.in_transaction:
+            conn.rollback()
         raise e
     finally:
         conn.close()

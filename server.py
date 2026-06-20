@@ -14,6 +14,7 @@ from database import (
     get_injured_players,
     get_monthly_injury_stats,
     get_player_injuries,
+    ValidationError,
 )
 
 
@@ -86,29 +87,35 @@ class RequestHandler(BaseHTTPRequestHandler):
             return
 
         if path == '/api/players':
-            player_id = add_player(
-                data.get('nickname', ''),
-                data.get('phone', ''),
-                data.get('position', ''),
-                data.get('status', '可上场')
-            )
-            self._send_json({'id': player_id, 'message': '添加成功'}, 201)
+            try:
+                player_id = add_player(
+                    data.get('nickname', ''),
+                    data.get('phone', ''),
+                    data.get('position', ''),
+                    data.get('status', '可上场')
+                )
+                self._send_json({'id': player_id, 'message': '添加成功'}, 201)
+            except ValidationError as e:
+                self._send_json({'error': str(e)}, 400)
         elif path == '/api/injuries':
-            injury_id = add_injury(
-                data.get('player_id'),
-                data.get('injury_date', ''),
-                data.get('description', ''),
-                data.get('severity', ''),
-                data.get('expected_recovery_date', None)
-            )
-            self._send_json({'id': injury_id, 'message': '伤病记录已添加，队员状态已更新为伤停'}, 201)
+            try:
+                injury_id = add_injury(
+                    data.get('player_id'),
+                    data.get('injury_date', ''),
+                    data.get('description', ''),
+                    data.get('severity', ''),
+                    data.get('expected_recovery_date', None)
+                )
+                self._send_json({'id': injury_id, 'message': '伤病记录已添加，队员状态已更新为伤停'}, 201)
+            except ValidationError as e:
+                self._send_json({'error': str(e)}, 400)
         elif path.startswith('/api/injuries/') and path.endswith('/recover'):
             injury_id = int(path.split('/')[3])
-            success = confirm_recovery(injury_id)
+            success, message = confirm_recovery(injury_id)
             if success:
-                self._send_json({'message': '康复确认成功，队员状态已恢复为可上场'})
+                self._send_json({'message': message})
             else:
-                self._send_json({'error': '康复确认失败，队员不是伤停状态或记录不存在'}, 400)
+                self._send_json({'error': message}, 400)
         else:
             self._send_json({'error': '接口不存在'}, 404)
 
@@ -124,17 +131,20 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         if path.startswith('/api/players/'):
             player_id = int(path.split('/')[-1])
-            success = update_player(
-                player_id,
-                data.get('nickname', ''),
-                data.get('phone', ''),
-                data.get('position', ''),
-                data.get('status', '可上场')
-            )
-            if success:
-                self._send_json({'message': '更新成功'})
-            else:
-                self._send_json({'error': '队员不存在'}, 404)
+            try:
+                success = update_player(
+                    player_id,
+                    data.get('nickname', ''),
+                    data.get('phone', ''),
+                    data.get('position', ''),
+                    data.get('status', '可上场')
+                )
+                if success:
+                    self._send_json({'message': '更新成功'})
+                else:
+                    self._send_json({'error': '队员不存在'}, 404)
+            except ValidationError as e:
+                self._send_json({'error': str(e)}, 400)
         else:
             self._send_json({'error': '接口不存在'}, 404)
 
