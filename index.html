@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>橄榄球俱乐部 - 队员档案与伤病管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1a365d;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: #e2e8f0;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 8px 8px 0 0;
+            color: #4a5568;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: #cbd5e0;
+        }
+
+        .tab.active {
+            background: #3182ce;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 0 12px 12px 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3182ce;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2c5282;
+        }
+
+        .btn-success {
+            background: #38a169;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #2f855a;
+        }
+
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c53030;
+        }
+
+        .btn-secondary {
+            background: #718096;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4a5568;
+        }
+
+        .btn-small {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-injured {
+            background: #fed7d7;
+            color: #822727;
+        }
+
+        .status-suspended {
+            background: #fefcbf;
+            color: #744210;
+        }
+
+        .severity-mild {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .severity-moderate {
+            background: #fefcbf;
+            color: #744210;
+        }
+
+        .severity-severe {
+            background: #fed7d7;
+            color: #822727;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .stat-mild .stat-number {
+            color: #38a169;
+        }
+
+        .stat-moderate .stat-number {
+            color: #d69e2e;
+        }
+
+        .stat-severe .stat-number {
+            color: #e53e3e;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #a0aec0;
+        }
+
+        .player-select {
+            position: relative;
+        }
+
+        .injury-history-item {
+            background: #f7fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #3182ce;
+        }
+
+        .injury-history-item .date {
+            font-size: 13px;
+            color: #718096;
+            margin-bottom: 4px;
+        }
+
+        .injury-history-item .desc {
+            font-size: 14px;
+            color: #2d3748;
+        }
+
+        .injury-history-item.recovered {
+            border-left-color: #38a169;
+            opacity: 0.7;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #2d3748;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏈 橄榄球俱乐部管理系统</h1>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('players')">队员管理</button>
+            <button class="tab" onclick="switchTab('injuries')">伤病记录</button>
+            <button class="tab" onclick="switchTab('recovery')">康复确认</button>
+            <button class="tab" onclick="switchTab('stats')">数据统计</button>
+        </div>
+
+        <div id="tab-players" class="tab-content active">
+            <div class="section-title">添加队员</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>昵称</label>
+                    <input type="text" id="player-nickname" placeholder="输入队员昵称">
+                </div>
+                <div class="form-group">
+                    <label>手机</label>
+                    <input type="text" id="player-phone" placeholder="手机号码">
+                </div>
+                <div class="form-group">
+                    <label>位置</label>
+                    <select id="player-position">
+                        <option value="前锋">前锋</option>
+                        <option value="后卫">后卫</option>
+                        <option value="中场">中场</option>
+                        <option value="守门员">守门员</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select id="player-status">
+                        <option value="可上场">可上场</option>
+                        <option value="伤停">伤停</option>
+                        <option value="停赛">停赛</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 0 0 auto; display: flex; align-items: flex-end;">
+                    <button class="btn btn-primary" onclick="addPlayer()">添加队员</button>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 30px;">队员列表</div>
+            <table id="players-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>昵称</th>
+                        <th>手机</th>
+                        <th>位置</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="players-tbody">
+                </tbody>
+            </table>
+        </div>
+
+        <div id="tab-injuries" class="tab-content">
+            <div class="section-title">记录伤病</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>队员</label>
+                    <select id="injury-player">
+                        <option value="">请选择队员</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>受伤日期</label>
+                    <input type="date" id="injury-date">
+                </div>
+                <div class="form-group">
+                    <label>严重程度</label>
+                    <select id="injury-severity">
+                        <option value="轻微">轻微</option>
+                        <option value="中度">中度</option>
+                        <option value="严重">严重</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>预计康复日期</label>
+                    <input type="date" id="injury-recovery-date">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex: 2;">
+                    <label>伤势描述</label>
+                    <textarea id="injury-description" rows="3" placeholder="请描述伤势情况..."></textarea>
+                </div>
+                <div class="form-group" style="flex: 0 0 auto; display: flex; align-items: flex-end;">
+                    <button class="btn btn-danger" onclick="addInjury()">记录伤病</button>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 30px;">队员历史伤病记录</div>
+            <div class="form-row">
+                <div class="form-group" style="max-width: 300px;">
+                    <label>选择队员查看历史</label>
+                    <select id="history-player" onchange="loadPlayerInjuries()">
+                        <option value="">请选择队员</option>
+                    </select>
+                </div>
+            </div>
+            <div id="player-injury-history">
+                <div class="empty-state">请选择队员查看历史伤病记录</div>
+            </div>
+        </div>
+
+        <div id="tab-recovery" class="tab-content">
+            <div class="section-title">当前伤停队员</div>
+            <table id="injured-table">
+                <thead>
+                    <tr>
+                        <th>队员</th>
+                        <th>位置</th>
+                        <th>受伤日期</th>
+                        <th>伤势</th>
+                        <th>严重程度</th>
+                        <th>预计康复</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="injured-tbody">
+                </tbody>
+            </table>
+        </div>
+
+        <div id="tab-stats" class="tab-content">
+            <div class="section-title">本月伤病统计</div>
+            <div class="stats-grid">
+                <div class="stat-card stat-mild">
+                    <div class="stat-number" id="stat-mild">0</div>
+                    <div class="stat-label">轻微</div>
+                </div>
+                <div class="stat-card stat-moderate">
+                    <div class="stat-number" id="stat-moderate">0</div>
+                    <div class="stat-label">中度</div>
+                </div>
+                <div class="stat-card stat-severe">
+                    <div class="stat-number" id="stat-severe">0</div>
+                    <div class="stat-label">严重</div>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 30px;">当前伤停队员列表</div>
+            <table id="stats-injured-table">
+                <thead>
+                    <tr>
+                        <th>队员</th>
+                        <th>位置</th>
+                        <th>受伤日期</th>
+                        <th>伤势</th>
+                        <th>严重程度</th>
+                        <th>预计康复</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-injured-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal">
+            <div class="modal-header">编辑队员</div>
+            <input type="hidden" id="edit-player-id">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>昵称</label>
+                    <input type="text" id="edit-nickname">
+                </div>
+                <div class="form-group">
+                    <label>手机</label>
+                    <input type="text" id="edit-phone">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>位置</label>
+                    <select id="edit-position">
+                        <option value="前锋">前锋</option>
+                        <option value="后卫">后卫</option>
+                        <option value="中场">中场</option>
+                        <option value="守门员">守门员</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select id="edit-status">
+                        <option value="可上场">可上场</option>
+                        <option value="伤停">伤停</option>
+                        <option value="停赛">停赛</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                <button class="btn btn-primary" onclick="savePlayerEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            if (tabName === 'players') loadPlayers();
+            if (tabName === 'injuries') { loadPlayersForSelect(); loadPlayersForHistorySelect(); }
+            if (tabName === 'recovery') loadInjuredPlayers();
+            if (tabName === 'stats') { loadMonthlyStats(); loadStatsInjuredPlayers(); }
+        }
+
+        function getStatusClass(status) {
+            if (status === '可上场') return 'status-active';
+            if (status === '伤停') return 'status-injured';
+            if (status === '停赛') return 'status-suspended';
+            return '';
+        }
+
+        function getSeverityClass(severity) {
+            if (severity === '轻微') return 'severity-mild';
+            if (severity === '中度') return 'severity-moderate';
+            if (severity === '严重') return 'severity-severe';
+            return '';
+        }
+
+        async function loadPlayers() {
+            const res = await fetch(`${API}/players`);
+            const players = await res.json();
+            const tbody = document.getElementById('players-tbody');
+            
+            if (players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">暂无队员</div></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = players.map(p => `
+                <tr>
+                    <td>${p.id}</td>
+                    <td>${p.nickname}</td>
+                    <td>${p.phone || '-'}</td>
+                    <td>${p.position}</td>
+                    <td><span class="status-badge ${getStatusClass(p.status)}">${p.status}</span></td>
+                    <td class="action-buttons">
+                        <button class="btn btn-primary btn-small" onclick="editPlayer(${p.id})">编辑</button>
+                        <button class="btn btn-danger btn-small" onclick="deletePlayer(${p.id})">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function addPlayer() {
+            const nickname = document.getElementById('player-nickname').value.trim();
+            const phone = document.getElementById('player-phone').value.trim();
+            const position = document.getElementById('player-position').value;
+            const status = document.getElementById('player-status').value;
+
+            if (!nickname) {
+                alert('请输入队员昵称');
+                return;
+            }
+
+            const res = await fetch(`${API}/players`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname, phone, position, status })
+            });
+
+            if (res.ok) {
+                document.getElementById('player-nickname').value = '';
+                document.getElementById('player-phone').value = '';
+                loadPlayers();
+            } else {
+                const data = await res.json();
+                alert(data.error || '添加失败');
+            }
+        }
+
+        async function editPlayer(playerId) {
+            const res = await fetch(`${API}/players/${playerId}`);
+            const player = await res.json();
+            
+            if (!player) {
+                alert('队员不存在');
+                return;
+            }
+
+            document.getElementById('edit-player-id').value = player.id;
+            document.getElementById('edit-nickname').value = player.nickname;
+            document.getElementById('edit-phone').value = player.phone || '';
+            document.getElementById('edit-position').value = player.position;
+            document.getElementById('edit-status').value = player.status;
+            
+            document.getElementById('edit-modal').classList.add('show');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('show');
+        }
+
+        async function savePlayerEdit() {
+            const id = document.getElementById('edit-player-id').value;
+            const nickname = document.getElementById('edit-nickname').value.trim();
+            const phone = document.getElementById('edit-phone').value.trim();
+            const position = document.getElementById('edit-position').value;
+            const status = document.getElementById('edit-status').value;
+
+            if (!nickname) {
+                alert('请输入队员昵称');
+                return;
+            }
+
+            const res = await fetch(`${API}/players/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname, phone, position, status })
+            });
+
+            if (res.ok) {
+                closeEditModal();
+                loadPlayers();
+            } else {
+                const data = await res.json();
+                alert(data.error || '更新失败');
+            }
+        }
+
+        async function deletePlayer(playerId) {
+            if (!confirm('确定要删除该队员及其所有伤病记录吗？')) return;
+
+            const res = await fetch(`${API}/players/${playerId}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                loadPlayers();
+            } else {
+                const data = await res.json();
+                alert(data.error || '删除失败');
+            }
+        }
+
+        async function loadPlayersForSelect() {
+            const res = await fetch(`${API}/players`);
+            const players = await res.json();
+            const select = document.getElementById('injury-player');
+            
+            select.innerHTML = '<option value="">请选择队员</option>' +
+                players.map(p => `<option value="${p.id}">${p.nickname} (${p.position})</option>`).join('');
+        }
+
+        async function loadPlayersForHistorySelect() {
+            const res = await fetch(`${API}/players`);
+            const players = await res.json();
+            const select = document.getElementById('history-player');
+            
+            select.innerHTML = '<option value="">请选择队员</option>' +
+                players.map(p => `<option value="${p.id}">${p.nickname} (${p.position})</option>`).join('');
+        }
+
+        async function addInjury() {
+            const player_id = document.getElementById('injury-player').value;
+            const injury_date = document.getElementById('injury-date').value;
+            const description = document.getElementById('injury-description').value.trim();
+            const severity = document.getElementById('injury-severity').value;
+            const expected_recovery_date = document.getElementById('injury-recovery-date').value || null;
+
+            if (!player_id) {
+                alert('请选择队员');
+                return;
+            }
+            if (!injury_date) {
+                alert('请选择受伤日期');
+                return;
+            }
+            if (!description) {
+                alert('请输入伤势描述');
+                return;
+            }
+
+            const res = await fetch(`${API}/injuries`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player_id, injury_date, description, severity, expected_recovery_date })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                alert(data.message || '记录成功');
+                document.getElementById('injury-description').value = '';
+                document.getElementById('injury-recovery-date').value = '';
+                loadPlayersForSelect();
+                loadPlayersForHistorySelect();
+                loadPlayerInjuries();
+            } else {
+                const data = await res.json();
+                alert(data.error || '记录失败');
+            }
+        }
+
+        async function loadPlayerInjuries() {
+            const playerId = document.getElementById('history-player').value;
+            const container = document.getElementById('player-injury-history');
+
+            if (!playerId) {
+                container.innerHTML = '<div class="empty-state">请选择队员查看历史伤病记录</div>';
+                return;
+            }
+
+            const res = await fetch(`${API}/players/${playerId}/injuries`);
+            const injuries = await res.json();
+
+            if (injuries.length === 0) {
+                container.innerHTML = '<div class="empty-state">该队员暂无伤病记录</div>';
+                return;
+            }
+
+            container.innerHTML = injuries.map(i => `
+                <div class="injury-history-item ${i.recovered ? 'recovered' : ''}">
+                    <div class="date">
+                        ${i.injury_date} 
+                        <span class="status-badge ${getSeverityClass(i.severity)}">${i.severity}</span>
+                        ${i.recovered ? '<span class="status-badge status-active">已康复</span>' : '<span class="status-badge status-injured">伤停中</span>'}
+                    </div>
+                    <div class="desc">${i.description}</div>
+                    ${i.expected_recovery_date ? `<div class="date" style="margin-top: 4px;">预计康复: ${i.expected_recovery_date}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        async function loadInjuredPlayers() {
+            const res = await fetch(`${API}/injuries/injured`);
+            const players = await res.json();
+            const tbody = document.getElementById('injured-tbody');
+
+            if (players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">当前无受伤队员</div></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = players.map(p => `
+                <tr>
+                    <td>${p.nickname}</td>
+                    <td>${p.position}</td>
+                    <td>${p.injury_date}</td>
+                    <td>${p.description}</td>
+                    <td><span class="status-badge ${getSeverityClass(p.severity)}">${p.severity}</span></td>
+                    <td>${p.expected_recovery_date || '-'}</td>
+                    <td>
+                        <button class="btn btn-success btn-small" onclick="confirmRecovery(${p.injury_id})">确认康复</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function confirmRecovery(injuryId) {
+            if (!confirm('确认该队员已康复？确认后队员状态将恢复为"可上场"。')) return;
+
+            const res = await fetch(`${API}/injuries/${injuryId}/recover`, {
+                method: 'POST'
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                alert(data.message || '康复确认成功');
+                loadInjuredPlayers();
+                loadStatsInjuredPlayers();
+                loadMonthlyStats();
+            } else {
+                const data = await res.json();
+                alert(data.error || '操作失败');
+            }
+        }
+
+        async function loadMonthlyStats() {
+            const res = await fetch(`${API}/injuries/stats/monthly`);
+            const stats = await res.json();
+
+            document.getElementById('stat-mild').textContent = stats['轻微'] || 0;
+            document.getElementById('stat-moderate').textContent = stats['中度'] || 0;
+            document.getElementById('stat-severe').textContent = stats['严重'] || 0;
+        }
+
+        async function loadStatsInjuredPlayers() {
+            const res = await fetch(`${API}/injuries/injured`);
+            const players = await res.json();
+            const tbody = document.getElementById('stats-injured-tbody');
+
+            if (players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">当前无受伤队员</div></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = players.map(p => `
+                <tr>
+                    <td>${p.nickname}</td>
+                    <td>${p.position}</td>
+                    <td>${p.injury_date}</td>
+                    <td>${p.description}</td>
+                    <td><span class="status-badge ${getSeverityClass(p.severity)}">${p.severity}</span></td>
+                    <td>${p.expected_recovery_date || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('injury-date').value = today;
+            
+            loadPlayers();
+        });
+    </script>
+</body>
+</html>
